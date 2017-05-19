@@ -1,0 +1,40 @@
+Requirements for the the program.
+
+	Sqllite3
+	PyPDF2
+	re 
+	urllib
+
+General:
+
+The purpose of this program is to return and archive incidents reports from the normanpd 	website. These incident reports are stored in PDF format and can be found at http://	normanpd.normanok.gov/content/daily-activity. One file per day is posted to the 	website.The link to the document is stored in the href of each document link. These 		documents can be identified by the string of 20Daily%20Incident%20Summary.pdf. There are 	~6 files posted at any time for the most recent days. Each document will contain a 		varying number of pages and lines.
+
+Code:
+
+normanpd.py
+
+fetchincidents function:
+
+First we are able to find navigate and read the normanpd website using urllib. I 		selected to store this content in a variable called HTML for easier processing in the 		program. After returning the source code we are interested in finding only the links 		that point to the PDF incident reports. To do so I invoke a regex match based on links 		matching the following string. 	
+/filebrowser_download/657/\d\d\d\d-\d\d-\d\d%20Daily%20Incident%20Summary.pdf
+These links then become the incident PDF file locations we are interested in and used 		for the other functions.
+
+Extractincidents and populatedb function:
+
+As noted in the assignment doc to feel free to combine functions I found it much more simple to combine the extraction and population into one function. In doing so as I process one document 	I am able to insert the data into the database. In theory this would reduce the likely hold of 	connection failures. In this function we process each href (document) found in the extraction 	function. After we extract a document line by line we find the length of the document and drop 	the first 5 and last 1 values in the dictionary. These dropped lines account for the headers of the document and a final date value that is included at the end of every document. From here we process the dictionary as follows. The rolling first and sixth value in the list should be a 	datetime stamp of the incident. I used a regex match to iterate through the document looking for the first and sixth position to match the requirements. At the point we find a valid line we insert 	the line into the database and iterate to the beginning of the following line. If we do not find a correct format we will iterate one position at a time until we find a series that matches the required format.  This make an assumption that we only care about lines that are 5 columns wide and  start with a datetime field. In other words if there is an address that wraps and the PDF reader reads it as two columns we through it out. The other scenario I found with this is if we are missing values we will through out the line and go to the next valid line to insert. 
+	
+createdb function:
+
+there is not much to this function we are simply creating a table called incidents. The incidents table has six columns ID, number, date_time, location, nature, ORI. This table is populated with 	the data from the normanpd incident reports.
+
+Status function:
+
+Very simple function that queries against the incidents table. First it will return the max id 	number in the table. This is also the total number of lines by default.  Then it will return a 	random sample of 5 lines in the database. I also include a drop table for the incidents table so you can run the code multiple time without error. Then we close the connection to the database.
+	
+main.py
+
+This file is the python code used to import the code and iterate through the functions. You will see that the extract and populate functions are combine as noted above.
+
+Run the code:
+
+There is no special requirements to run code. As long as you have the required packages noted 	at the top. If you wanted to direct to another website or files a few minor modifications would need to be made. The modifications would relate to the fetchincidents function and then how we 	parse in the extract function.     
